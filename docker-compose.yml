@@ -1,0 +1,98 @@
+version: "3.8"
+services:
+  proxy:
+    image: traefik:v2.3.7
+    command:
+      - "--api"
+      - "--api.dashboard"
+      - "--api.insecure"
+      - "--providers.docker"
+      - "--entrypoints.web.address=:80"
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+    ports:
+      - target: 80
+        published: 4000
+        protocol: tcp
+        mode: host
+      - target: 8080
+        published: 8080
+        protocol: tcp
+        mode: host
+
+  movies:
+    # build: ./movies
+    image: ghcr.io/mmorejon/cinema-movies:v2.0.1
+    command:
+      - "-mongoURI"
+      - "mongodb://db:27017/"
+    #   - "-enableCredentials"
+    #   - "true"
+    # environment:
+    #   MONGODB_USERNAME: "demo"
+    #   MONGODB_PASSWORD: "e3LBVTPdlzxYbxt9"
+    labels:
+      - "traefik.http.routers.movies.rule=PathPrefix(`/api/movies/`)"
+      - "traefik.http.services.movies.loadbalancer.server.port=4000"
+
+  bookings:
+    # build: ./bookings
+    image: ghcr.io/mmorejon/cinema-bookings:v2.0.1
+    command:
+      - "-mongoURI"
+      - "mongodb://db:27017/"
+    #   - "-enableCredentials"
+    #   - "true"
+    # environment:
+    #   MONGODB_USERNAME: "demo"
+    #   MONGODB_PASSWORD: "e3LBVTPdlzxYbxt9"
+    labels:
+      - "traefik.http.routers.bookings.rule=PathPrefix(`/api/bookings/`)"
+      - "traefik.http.services.bookings.loadbalancer.server.port=4000"
+
+  showtimes:
+    # build: ./showtimes
+    image: ghcr.io/mmorejon/cinema-showtimes:v2.0.1
+    command:
+      - "-mongoURI"
+      - "mongodb://db:27017/"
+    #   - "-enableCredentials"
+    #   - "true"
+    # environment:
+    #   MONGODB_USERNAME: "demo"
+    #   MONGODB_PASSWORD: "e3LBVTPdlzxYbxt9"
+    labels:
+      - "traefik.http.routers.showtimes.rule=PathPrefix(`/api/showtimes/`)"
+      - "traefik.http.services.showtimes.loadbalancer.server.port=4000"
+
+  users:
+    # build: ./users
+    image: ghcr.io/mmorejon/cinema-users:v2.0.1
+    command:
+      - "-mongoURI"
+      - "mongodb://db:27017/"
+    #   - "-enableCredentials"
+    #   - "true"
+    # environment:
+    #   MONGODB_USERNAME: "demo"
+    #   MONGODB_PASSWORD: "e3LBVTPdlzxYbxt9"
+    labels:
+      - "traefik.http.routers.users.rule=PathPrefix(`/api/users/`)"
+      - "traefik.http.services.users.loadbalancer.server.port=4000"
+
+  db:
+    image: mongo:4.2.11
+    labels:
+      - "traefik.http.services.db.loadbalancer.server.port=27017"
+    # ports:
+    #   - target: 27017
+    #     published: 27017
+    #     protocol: tcp
+    #     mode: host
+    volumes:
+      - type: bind
+        source: ./backup
+        target: /backup
